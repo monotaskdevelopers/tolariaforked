@@ -19,6 +19,10 @@ function storageKey(vaultPath: string): string {
   return `${STORAGE_PREFIX}${vaultPath}`
 }
 
+function isStoredVaultConfig(value: unknown): value is Partial<VaultConfig> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value)
+}
+
 function loadFromStorage(vaultPath: string): VaultConfig {
   const DEFAULT: VaultConfig = {
     zoom: null, view_mode: null, editor_mode: null, note_layout: null,
@@ -30,7 +34,9 @@ function loadFromStorage(vaultPath: string): VaultConfig {
   try {
     const raw = localStorage.getItem(storageKey(vaultPath))
     if (!raw) return DEFAULT
-    return { ...DEFAULT, ...JSON.parse(raw) }
+    const parsed = JSON.parse(raw)
+    if (!isStoredVaultConfig(parsed)) return DEFAULT
+    return { ...DEFAULT, ...parsed }
   } catch {
     return DEFAULT
   }
