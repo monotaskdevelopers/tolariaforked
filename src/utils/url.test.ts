@@ -28,6 +28,9 @@ describe('normalizeExternalUrl', () => {
     expect(normalizeExternalUrl('https://example.com')).toBe('https://example.com')
     expect(normalizeExternalUrl('https://example.com/docs')).toBe('https://example.com/docs')
     expect(normalizeExternalUrl('example.com/docs')).toBe('https://example.com/docs')
+    expect(normalizeExternalUrl('localhost:5173')).toBe('http://localhost:5173')
+    expect(normalizeExternalUrl('127.0.0.1:3000/api')).toBe('http://127.0.0.1:3000/api')
+    expect(normalizeExternalUrl('[::1]:8787')).toBe('http://[::1]:8787')
   })
 
   it('rejects pure numeric values instead of treating them as bare domains', () => {

@@ -17,6 +17,15 @@ function hasBareDomainHost(parsedUrl: URL): boolean {
   return dotIndex > 0 && dotIndex <= parsedUrl.hostname.length - 3
 }
 
+function normalizedBareHost(hostname: string): string {
+  return hostname.replace(/^\[/u, '').replace(/\]$/u, '').toLowerCase()
+}
+
+function isLoopbackHost(parsedUrl: URL): boolean {
+  const hostname = normalizedBareHost(parsedUrl.hostname)
+  return hostname === 'localhost' || hostname === '127.0.0.1' || hostname === '::1'
+}
+
 function startsWithHttpProtocol(url: ExternalUrlCandidate): boolean {
   const lowerUrl = url.toLowerCase()
   return lowerUrl.startsWith('http://') || lowerUrl.startsWith('https://')
@@ -47,12 +56,13 @@ export function normalizeExternalUrl(value: ExternalUrlCandidate): string | null
   }
 
   if (parseHttpUrl(trimmed)) return trimmed
-  if (!trimmed.includes('.')) return null
 
   const bareDomainCandidate = `https://${trimmed}`
   const parsedBareDomain = parseHttpUrl(bareDomainCandidate)
-  if (!parsedBareDomain || !hasBareDomainHost(parsedBareDomain)) return null
-  return bareDomainCandidate
+  if (!parsedBareDomain) return null
+  if (hasBareDomainHost(parsedBareDomain)) return bareDomainCandidate
+  if (!isLoopbackHost(parsedBareDomain)) return null
+  return `http://${trimmed}`
 }
 
 export function isUrlValue(value: ExternalUrlCandidate): boolean {
