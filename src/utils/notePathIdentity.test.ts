@@ -24,6 +24,7 @@ describe('notePathIdentity', () => {
 
   it('normalizes relative folder paths and labels', () => {
     expect(normalizeVaultRelativePath(String.raw`/projects\active/`)).toBe('projects/active')
+    expect(normalizeVaultRelativePath(String.raw`//projects\\\active///daily//`)).toBe('projects/active/daily')
     expect(vaultRelativePathLabel(String.raw`/projects\active/`)).toBe('active')
   })
 

@@ -51,7 +51,9 @@ export function notePathFilename(path: NotePath): string {
 }
 
 export function normalizeVaultRelativePath(path: VaultRelativePath): VaultRelativePath {
-  return normalizeNotePathSeparators(path.trim()).replace(/^\/+|\/+$/gu, '')
+  return normalizeNotePathSeparators(path.trim())
+    .replace(/\/+/gu, '/')
+    .replace(/^\/+|\/+$/gu, '')
 }
 
 export function vaultRelativePathLabel(path: VaultRelativePath): string {
