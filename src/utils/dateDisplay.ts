@@ -63,7 +63,7 @@ export function formatTimestampForDateDisplay(
   timestampSeconds: number | null | undefined,
   format: DateDisplayFormat = DEFAULT_DATE_DISPLAY_FORMAT,
 ): string {
-  if (!timestampSeconds) return ''
+  if (timestampSeconds == null) return ''
   return formatDateForDisplay(new Date(timestampSeconds * 1000), format)
 }
 

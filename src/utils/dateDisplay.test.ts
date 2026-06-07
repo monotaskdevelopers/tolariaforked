@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import {
   formatDatePartsForDisplay,
+  formatTimestampForDateDisplay,
   formatDateValueForDisplay,
   normalizeDateDisplayFormat,
 } from './dateDisplay'
@@ -26,5 +27,9 @@ describe('dateDisplay', () => {
     expect(formatDateValueForDisplay('2026-05-11', 'european')).toBe('11/5/2026')
     expect(formatDateValueForDisplay('05/11/2026', 'friendly')).toBe('May 11, 2026')
     expect(formatDateValueForDisplay('next Monday', 'iso')).toBe('next Monday')
+  })
+
+  it('treats zero timestamps as valid dates instead of empty values', () => {
+    expect(formatTimestampForDateDisplay(0, 'iso')).toBe('1970-01-01')
   })
 })
