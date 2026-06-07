@@ -60,6 +60,14 @@ describe('openExternalUrl', () => {
     expect(open).not.toHaveBeenCalled()
   })
 
+  it('opens browser URLs with noopener and noreferrer in web mode', async () => {
+    const open = vi.spyOn(window, 'open').mockImplementation(() => null)
+
+    await openExternalUrl('https://example.com')
+
+    expect(open).toHaveBeenCalledWith('https://example.com', '_blank', 'noopener,noreferrer')
+  })
+
   it('treats Windows user-canceled opener dialogs as a benign no-op', async () => {
     vi.stubGlobal('isTauri', true)
     vi.mocked(openUrl).mockRejectedValueOnce(new Error('The operation was canceled by the user. (os error 1223)'))
