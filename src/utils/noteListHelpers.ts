@@ -241,20 +241,52 @@ export function parseSortConfig(raw: string | null | undefined): SortConfig | nu
   return { option, direction: dir }
 }
 
+function isStoredSortRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value)
+}
+
+function normalizeStoredSortOption(raw: string): SortOption | null {
+  const optionName = raw.trim()
+  if (!optionName || optionName === 'property:') return null
+  if (BUILT_IN_SORT_OPTIONS.has(optionName) || optionName.startsWith('property:')) {
+    return optionName as SortOption
+  }
+  if (optionName.includes(':')) return null
+  return `property:${optionName}` as SortOption
+}
+
+function normalizeStoredSortConfig(value: unknown): SortConfig | null {
+  if (typeof value === 'string') {
+    const serialized = parseSortConfig(value)
+    if (serialized) return serialized
+
+    const option = normalizeStoredSortOption(value)
+    return option ? { option, direction: getDefaultDirection(option) } : null
+  }
+
+  if (!isStoredSortRecord(value)) return null
+
+  const option = typeof value.option === 'string' ? normalizeStoredSortOption(value.option) : null
+  if (!option) return null
+
+  const directionValue = value.direction
+  const direction = directionValue === 'asc' || directionValue === 'desc'
+    ? directionValue
+    : getDefaultDirection(option)
+
+  return { option, direction }
+}
+
 export function loadSortPreferences(): Record<string, SortConfig> {
   try {
     const raw = getAppStorageItem('sortPreferences')
     if (!raw) return {}
     const parsed = JSON.parse(raw)
+    if (!isStoredSortRecord(parsed)) return {}
     const result: Record<string, SortConfig> = {}
     for (const [key, value] of Object.entries(parsed)) {
-      if (typeof value === 'string') {
-        // Migrate old format: bare SortOption string → SortConfig
-        const opt = value as SortOption
-        Reflect.set(result, key, { option: opt, direction: getDefaultDirection(opt) })
-      } else {
-        Reflect.set(result, key, value as SortConfig)
-      }
+      const normalized = normalizeStoredSortConfig(value)
+      if (normalized) Reflect.set(result, key, normalized)
     }
     return result
   } catch {
@@ -275,6 +307,11 @@ export function clearListSortFromLocalStorage(): void {
     const raw = getAppStorageItem('sortPreferences')
     if (!raw) return
     const parsed = JSON.parse(raw)
+    if (!isStoredSortRecord(parsed)) {
+      localStorage.removeItem(APP_STORAGE_KEYS.sortPreferences)
+      localStorage.removeItem(LEGACY_APP_STORAGE_KEYS.sortPreferences)
+      return
+    }
     delete parsed['__list__']
     if (Object.keys(parsed).length === 0) {
       localStorage.removeItem(APP_STORAGE_KEYS.sortPreferences)

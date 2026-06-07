@@ -184,6 +184,26 @@ describe('noteListHelpers extra coverage', () => {
     expect(localStorage.getItem(LEGACY_APP_STORAGE_KEYS.sortPreferences)).toBeNull()
   })
 
+  it('ignores malformed or invalid stored sort preferences while keeping valid entries', () => {
+    localStorage.setItem(APP_STORAGE_KEYS.sortPreferences, JSON.stringify({
+      '__list__': { option: 'modified', direction: 'desc' },
+      'type:Project': { option: 'created', direction: 'sideways' },
+      'type:Broken': 'title:sideways',
+      'type:Array': ['created', 'asc'],
+    }))
+
+    expect(loadSortPreferences()).toEqual({
+      '__list__': { option: 'modified', direction: 'desc' },
+      'type:Project': { option: 'created', direction: 'desc' },
+    })
+
+    localStorage.setItem(APP_STORAGE_KEYS.sortPreferences, JSON.stringify(['bad']))
+    expect(loadSortPreferences()).toEqual({})
+
+    clearListSortFromLocalStorage()
+    expect(localStorage.getItem(APP_STORAGE_KEYS.sortPreferences)).toBeNull()
+  })
+
   it('filters view, folder, favorites, and pulse selections', () => {
     const entries = [
       makeEntry({
