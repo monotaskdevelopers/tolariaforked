@@ -78,9 +78,17 @@ function pastRelativePattern(tokens: RelativeToken[]): RelativePattern | null {
   return { amountToken: tokens.at(0) ?? '', future: false, unitToken: tokens.at(1) ?? '' }
 }
 
+function directionalRelativePattern(tokens: RelativeToken[]): RelativePattern | null {
+  if (tokens.length !== 2) return null
+  if (tokens.at(0) === 'next') return { amountToken: '1', future: true, unitToken: tokens.at(1) ?? '' }
+  if (tokens.at(0) === 'last') return { amountToken: '1', future: false, unitToken: tokens.at(1) ?? '' }
+  return null
+}
+
 function parseRelativeTokenPattern(tokens: RelativeToken[]): RelativePattern | null {
-  if (tokens.length !== 3) return null
-  return futureRelativePattern(tokens) ?? pastRelativePattern(tokens)
+  return directionalRelativePattern(tokens)
+    ?? futureRelativePattern(tokens)
+    ?? pastRelativePattern(tokens)
 }
 
 function parseRelativeDateInput(value: DateFilterInput, reference: Date): Date | null {

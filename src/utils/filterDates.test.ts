@@ -30,6 +30,12 @@ describe('filterDates', () => {
     expect(parsed && format(parsed, 'yyyy-MM-dd')).toBe('2026-03-31')
   })
 
+  it('parses next/last shorthand relative phrases', () => {
+    const reference = new Date('2026-04-07T12:00:00Z')
+    expect(format(parseDateFilterInput('next week', reference)!, 'yyyy-MM-dd')).toBe('2026-04-14')
+    expect(format(parseDateFilterInput('last month', reference)!, 'yyyy-MM-dd')).toBe('2026-03-07')
+  })
+
   it('returns null for unsupported date phrases', () => {
     expect(parseDateFilterInput('eventually')).toBeNull()
   })
