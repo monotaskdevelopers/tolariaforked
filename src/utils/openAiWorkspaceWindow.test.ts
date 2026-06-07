@@ -74,9 +74,9 @@ describe('openAiWorkspaceWindow', () => {
 
   it('builds the AI workspace route', () => {
     const url = buildAiWorkspaceWindowUrl('ai-workspace', {
-      activeConversationId: 'chat-1',
-      vaultPath: '/tmp/vault',
-      vaultPaths: ['/tmp/vault', '/tmp/other'],
+      activeConversationId: ' chat-1 ',
+      vaultPath: ' /tmp/vault ',
+      vaultPaths: [' /tmp/vault ', '/tmp/other', '/tmp/vault'],
     })
     const parsed = new URL(url, 'https://tolaria.localhost')
 
@@ -89,7 +89,7 @@ describe('openAiWorkspaceWindow', () => {
   })
 
   it('reads the AI workspace route context', () => {
-    const search = '?window=ai-workspace&activeConversationId=chat-1&vault=%2Ftmp%2Fvault&vaultPaths=%5B%22%2Ftmp%2Fvault%22%5D'
+    const search = '?window=ai-workspace&activeConversationId=%20chat-1%20&vault=%20%2Ftmp%2Fvault%20&vaultPaths=%5B%22%2Ftmp%2Fvault%22%2C%22%20%2Ftmp%2Fvault%20%22%2C%22%22%5D'
 
     expect(readAiWorkspaceWindowContext(search)).toEqual({
       activeConversationId: 'chat-1',

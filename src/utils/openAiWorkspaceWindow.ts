@@ -42,9 +42,12 @@ export function buildAiWorkspaceWindowUrl(
     window: 'ai-workspace',
     windowLabel,
   })
-  if (context.activeConversationId) params.set('activeConversationId', context.activeConversationId)
-  if (context.vaultPath) params.set('vault', context.vaultPath)
-  if (context.vaultPaths?.length) params.set('vaultPaths', JSON.stringify(context.vaultPaths))
+  const activeConversationId = context.activeConversationId?.trim()
+  const vaultPath = context.vaultPath?.trim()
+  const vaultPaths = normalizeVaultPaths(context.vaultPaths)
+  if (activeConversationId) params.set('activeConversationId', activeConversationId)
+  if (vaultPath) params.set('vault', vaultPath)
+  if (vaultPaths) params.set('vaultPaths', JSON.stringify(vaultPaths))
 
   return `/?${params.toString()}`
 }
@@ -64,10 +67,22 @@ export function buildRuntimeAiWorkspaceWindowUrl(
 
 export function readAiWorkspaceWindowContext(search = window.location.search): AiWorkspaceWindowContext {
   const params = new URLSearchParams(search)
-  const activeConversationId = params.get('activeConversationId') ?? undefined
-  const vaultPath = params.get('vault') ?? undefined
+  const activeConversationId = params.get('activeConversationId')?.trim() || undefined
+  const vaultPath = params.get('vault')?.trim() || undefined
   const vaultPaths = parseVaultPathsParam(params.get('vaultPaths'))
   return { activeConversationId, vaultPath, vaultPaths }
+}
+
+function normalizeVaultPaths(vaultPaths: string[] | null | undefined): string[] | undefined {
+  if (!vaultPaths) return undefined
+
+  const normalized = [...new Set(
+    vaultPaths
+      .map((item) => item.trim())
+      .filter((item) => item.length > 0),
+  )]
+
+  return normalized.length > 0 ? normalized : undefined
 }
 
 function parseVaultPathsParam(raw: string | null): string[] | undefined {
@@ -76,8 +91,8 @@ function parseVaultPathsParam(raw: string | null): string[] | undefined {
   try {
     const parsed = JSON.parse(raw)
     if (Array.isArray(parsed)) {
-      const paths = parsed.filter((item): item is string => typeof item === 'string' && item.trim().length > 0)
-      return paths.length > 0 ? paths : undefined
+      const paths = normalizeVaultPaths(parsed.filter((item): item is string => typeof item === 'string'))
+      return paths
     }
   } catch {
     return undefined
