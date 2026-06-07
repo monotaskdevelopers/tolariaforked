@@ -27,6 +27,7 @@ describe('themeMode', () => {
     expect(normalizeThemeMode('light')).toBe('light')
     expect(normalizeThemeMode('dark')).toBe('dark')
     expect(normalizeThemeMode('system')).toBe('system')
+    expect(normalizeThemeMode(' DARK ')).toBe('dark')
     expect(resolveThemeMode('system', makeMatchMedia(true))).toBe('dark')
     expect(resolveThemeMode('system', makeMatchMedia(false))).toBe('light')
     expect(resolveThemeMode('sepia')).toBe('light')

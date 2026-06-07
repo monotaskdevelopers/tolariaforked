@@ -17,7 +17,9 @@ type ThemeDocument = Pick<Document, 'documentElement'>
 type ThemeMatchMedia = Window['matchMedia']
 
 export function normalizeThemeMode(value: unknown): ThemeMode | null {
-  return typeof value === 'string' && THEME_MODES.has(value) ? value as ThemeMode : null
+  if (typeof value !== 'string') return null
+  const normalized = value.trim().toLowerCase()
+  return THEME_MODES.has(normalized) ? normalized as ThemeMode : null
 }
 
 export function normalizeResolvedThemeMode(value: unknown): ResolvedThemeMode | null {
