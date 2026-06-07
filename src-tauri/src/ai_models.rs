@@ -124,6 +124,7 @@ fn normalize_ai_model_provider(mut provider: AiModelProvider) -> Option<AiModelP
     provider.name = provider.name.trim().to_string();
     provider.base_url = normalize_optional_string(provider.base_url);
     provider.api_key_env_var = normalize_optional_string(provider.api_key_env_var);
+    provider.headers = normalize_headers(provider.headers);
     provider.api_key_storage = normalize_api_key_storage(&provider);
     provider.models = normalized_models(provider.models);
 
@@ -159,6 +160,22 @@ fn normalize_optional_string(value: Option<String>) -> Option<String> {
     value
         .map(|candidate| candidate.trim().to_string())
         .filter(|candidate| !candidate.is_empty())
+}
+
+fn normalize_headers(headers: Option<BTreeMap<String, String>>) -> Option<BTreeMap<String, String>> {
+    let normalized = headers?
+        .into_iter()
+        .filter_map(|(key, value)| {
+            let key = key.trim().to_string();
+            let value = value.trim().to_string();
+            if key.is_empty() || value.is_empty() || key.eq_ignore_ascii_case("authorization") {
+                return None;
+            }
+            Some((key, value))
+        })
+        .collect::<BTreeMap<_, _>>();
+
+    (!normalized.is_empty()).then_some(normalized)
 }
 
 pub fn run_ai_model_stream<F>(request: AiModelStreamRequest, mut emit: F) -> Result<String, String>
@@ -316,15 +333,20 @@ fn apply_provider_headers(
     builder
 }
 
-fn safe_custom_headers(request: &AiModelStreamRequest) -> Vec<(&String, &String)> {
+fn safe_custom_headers(request: &AiModelStreamRequest) -> Vec<(String, String)> {
     request
         .provider
         .headers
         .as_ref()
         .into_iter()
         .flat_map(|headers| headers.iter())
-        .filter(|(key, value)| {
-            !key.eq_ignore_ascii_case("authorization") && non_empty_option(Some(value)).is_some()
+        .filter_map(|(key, value)| {
+            let key = key.trim();
+            let value = value.trim();
+            if key.is_empty() || value.is_empty() || key.eq_ignore_ascii_case("authorization") {
+                return None;
+            }
+            Some((key.to_string(), value.to_string()))
         })
         .collect()
 }
@@ -582,7 +604,14 @@ mod tests {
 
         let providers = normalize_ai_model_providers(Some(vec![
             invalid,
-            provider(AiModelProviderKind::OpenAiCompatible),
+            AiModelProvider {
+                headers: Some(BTreeMap::from([
+                    (" X-Demo ".into(), " demo ".into()),
+                    ("Authorization".into(), "ignored".into()),
+                    ("X-Blank".into(), "   ".into()),
+                ])),
+                ..provider(AiModelProviderKind::OpenAiCompatible)
+            },
         ]))
         .expect("valid provider should remain");
 
@@ -596,6 +625,10 @@ mod tests {
         );
         assert_eq!(normalized.api_key_env_var.as_deref(), Some("DEMO_API_KEY"));
         assert_eq!(normalized.api_key_storage, Some(AiModelApiKeyStorage::Env));
+        assert_eq!(
+            normalized.headers,
+            Some(BTreeMap::from([("X-Demo".into(), "demo".into())]))
+        );
         assert_eq!(normalized.models.len(), 1);
         assert_eq!(normalized.models[0].id, "demo-model");
         assert_eq!(
@@ -616,22 +649,19 @@ mod tests {
         provider.base_url = None;
         provider.headers = Some(BTreeMap::from([
             ("Authorization".into(), "ignored".into()),
-            ("X-Demo".into(), "demo".into()),
+            (" X-Demo ".into(), " demo ".into()),
             ("X-Blank".into(), "   ".into()),
         ]));
         provider.models = vec![model("demo-model")];
         let request = request(provider);
-        let headers = safe_custom_headers(&request)
-            .into_iter()
-            .map(|(key, value)| (key.as_str(), value.as_str()))
-            .collect::<Vec<_>>();
+        let headers = safe_custom_headers(&request);
 
         assert_eq!(
             normalized_base_url(&request).unwrap(),
             "https://api.anthropic.com/v1"
         );
         assert_eq!(selected_max_tokens(&request), 8192);
-        assert_eq!(headers, vec![("X-Demo", "demo")]);
+        assert_eq!(headers, vec![("X-Demo".into(), "demo".into())]);
     }
 
     #[test]
@@ -641,7 +671,7 @@ mod tests {
         anthropic_provider.api_key_env_var = None;
         anthropic_provider.headers = Some(BTreeMap::from([
             ("Authorization".into(), "ignored".into()),
-            ("X-Demo".into(), "demo".into()),
+            (" X-Demo ".into(), " demo ".into()),
         ]));
         let mut anthropic_request = request(anthropic_provider);
         anthropic_request.api_key_override = Some(" secret ".into());

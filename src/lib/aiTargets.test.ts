@@ -117,7 +117,14 @@ describe('ai target provider contract', () => {
 
   it('normalizes saved providers while using the catalog for local/provider classification', () => {
     const normalized = normalizeAiModelProviders([
-      provider('open_ai_compatible'),
+      {
+        ...provider('open_ai_compatible'),
+        headers: {
+          ' X-Demo ': ' demo ',
+          Authorization: 'ignored',
+          'X-Blank': '   ',
+        },
+      },
       { ...provider('ollama'), id: ' ', name: 'Missing ID' },
     ])
 
@@ -128,6 +135,7 @@ describe('ai target provider contract', () => {
       base_url: 'https://example.com/v1',
       api_key_env_var: 'DEMO_API_KEY',
       api_key_storage: 'env',
+      headers: { 'X-Demo': 'demo' },
     })
     expect(normalized[0].models[0]).toMatchObject({
       id: 'demo-model',

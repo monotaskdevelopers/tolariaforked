@@ -180,6 +180,7 @@ export function normalizeAiModelProvider(provider: AiModelProvider): AiModelProv
     base_url: emptyToNull(provider.base_url),
     api_key_storage: normalizeApiKeyStorage(provider),
     api_key_env_var: emptyToNull(provider.api_key_env_var),
+    headers: normalizeProviderHeaders(provider.headers),
     models,
   }
 }
@@ -199,6 +200,20 @@ function normalizeAiModelDefinition(model: AiModelDefinition): AiModelDefinition
     display_name: emptyToNull(model.display_name),
     capabilities: model.capabilities ?? DEFAULT_MODEL_CAPABILITIES,
   }
+}
+
+function normalizeProviderHeaders(headers: Record<string, string> | null | undefined): Record<string, string> | null {
+  if (!headers) return null
+
+  const normalized = Object.entries(headers).reduce<Record<string, string>>((result, [rawKey, rawValue]) => {
+    const key = rawKey.trim()
+    const value = rawValue.trim()
+    if (!key || !value || key.toLowerCase() === 'authorization') return result
+    result[key] = value
+    return result
+  }, {})
+
+  return Object.keys(normalized).length > 0 ? normalized : null
 }
 
 function emptyToNull(value: string | null | undefined): string | null {
