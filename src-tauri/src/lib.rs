@@ -197,8 +197,24 @@ where
 
 /// Run startup housekeeping on the legacy default vault (migrate legacy frontmatter, seed configs).
 #[cfg(desktop)]
+fn startup_vault_path_str(vault_path: &Path) -> Option<&str> {
+    match vault_path.to_str() {
+        Some(path) => Some(path),
+        None => {
+            log::warn!(
+                "Skipping startup tasks for vault with non-UTF-8 path: {}",
+                vault_path.display()
+            );
+            None
+        }
+    }
+}
+
+#[cfg(desktop)]
 fn run_startup_tasks_for_vault(vault_path: &Path) {
-    let vp_str = vault_path.to_str().unwrap_or_default();
+    let Some(vp_str) = startup_vault_path_str(vault_path) else {
+        return;
+    };
     log_startup_result(
         "Migrated is_a to type on startup",
         vault::migrate_is_a_to_type(vp_str),
@@ -732,6 +748,15 @@ mod tests {
             .recv_timeout(std::time::Duration::from_secs(1))
             .unwrap();
         release_tx.send(()).unwrap();
+    }
+
+    #[cfg(all(desktop, unix))]
+    #[test]
+    fn startup_tasks_reject_non_utf8_vault_paths() {
+        use std::os::unix::ffi::OsStrExt;
+
+        let path = std::path::Path::new(std::ffi::OsStr::from_bytes(b"/tmp/tolaria-\xFF"));
+        assert!(startup_vault_path_str(path).is_none());
     }
 
     #[cfg(desktop)]
