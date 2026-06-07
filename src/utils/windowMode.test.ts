@@ -172,6 +172,24 @@ describe('windowMode', () => {
       expect(params?.noteTitle).toBe('Untitled')
     })
 
+    it('treats blank query titles as Untitled and ignores blank stored params', () => {
+      setSearch('?window=note&path=%20%2Ftest.md%20&vault=%20%2Fvault%20&title=%20%20')
+      expect(getNoteWindowParams()).toEqual({
+        notePath: '/test.md',
+        vaultPath: '/vault',
+        noteTitle: 'Untitled',
+      })
+
+      setSearch('')
+      setCurrentWindowLabel('note-blank')
+      localStorage.setItem('tolaria:note-window:note-blank', JSON.stringify({
+        notePath: '   ',
+        vaultPath: '/vault',
+        noteTitle: 'Ignored',
+      }))
+      expect(getNoteWindowParams()).toBeNull()
+    })
+
     it('recovers params from storage when a Tauri note window loses its query params', () => {
       setSearch('')
       setCurrentWindowLabel('note-2')

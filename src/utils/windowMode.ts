@@ -24,7 +24,7 @@ const AI_WORKSPACE_WINDOW_STORAGE_KEY = `${AI_WORKSPACE_WINDOW_STORAGE_PREFIX}${
 
 function getCurrentWindowLabel(): string | null {
   const internals = (window as Window & { __TAURI_INTERNALS__?: TauriWindowInternals }).__TAURI_INTERNALS__
-  const label = internals?.metadata?.currentWindow?.label
+  const label = internals?.metadata?.currentWindow?.label?.trim()
   return typeof label === 'string' && label.length > 0 ? label : null
 }
 
@@ -33,8 +33,8 @@ function noteWindowStorageKey(label: string): string {
 }
 
 function isStoredNoteWindowParams(value: Partial<NoteWindowParams>): value is NoteWindowParams {
-  if (typeof value.notePath !== 'string') return false
-  if (typeof value.vaultPath !== 'string') return false
+  if (typeof value.notePath !== 'string' || value.notePath.trim().length === 0) return false
+  if (typeof value.vaultPath !== 'string' || value.vaultPath.trim().length === 0) return false
   return typeof value.noteTitle === 'string'
 }
 
@@ -45,9 +45,9 @@ function parseStoredNoteWindowParams(raw: string | null): NoteWindowParams | nul
     const parsed = JSON.parse(raw) as Partial<NoteWindowParams>
     if (isStoredNoteWindowParams(parsed)) {
       return {
-        notePath: parsed.notePath,
-        vaultPath: parsed.vaultPath,
-        noteTitle: parsed.noteTitle,
+        notePath: parsed.notePath.trim(),
+        vaultPath: parsed.vaultPath.trim(),
+        noteTitle: parsed.noteTitle.trim() || 'Untitled',
       }
     }
   } catch {
@@ -68,7 +68,7 @@ function getStoredNoteWindowParams(label: string | null): NoteWindowParams | nul
 }
 
 function getNoteWindowLabel(params: URLSearchParams): string | null {
-  return params.get('windowLabel') ?? getCurrentWindowLabel()
+  return params.get('windowLabel')?.trim() || getCurrentWindowLabel()
 }
 
 export function rememberNoteWindowParams(label: string, params: NoteWindowParams): void {
@@ -109,9 +109,9 @@ export function isAiWorkspaceWindow(): boolean {
 export function getNoteWindowParams(): NoteWindowParams | null {
   const params = new URLSearchParams(window.location.search)
   if (params.get('window') !== 'note') return getStoredNoteWindowParams(getCurrentWindowLabel())
-  const notePath = params.get('path')
-  const vaultPath = params.get('vault')
-  const noteTitle = params.get('title') ?? 'Untitled'
+  const notePath = params.get('path')?.trim()
+  const vaultPath = params.get('vault')?.trim()
+  const noteTitle = params.get('title')?.trim() || 'Untitled'
   if (!notePath || !vaultPath) return getStoredNoteWindowParams(getNoteWindowLabel(params))
   return { notePath, vaultPath, noteTitle }
 }
