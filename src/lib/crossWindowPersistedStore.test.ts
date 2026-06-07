@@ -99,6 +99,17 @@ describe('createCrossWindowPersistedStore', () => {
     expect(listener).toHaveBeenCalledTimes(1)
   })
 
+  it('only installs cross-window listeners once per store', () => {
+    const addEventListenerSpy = vi.spyOn(window, 'addEventListener')
+    const store = createTestStore()
+
+    store.ensureCrossWindowSync()
+    store.ensureCrossWindowSync()
+
+    expect(addEventListenerSpy).toHaveBeenCalledTimes(1)
+    expect(BroadcastChannelMock.channels).toHaveLength(1)
+  })
+
   it('broadcasts local publishes to sibling stores through localStorage', () => {
     const firstStore = createTestStore()
     const secondStore = createTestStore()

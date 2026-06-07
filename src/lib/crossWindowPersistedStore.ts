@@ -18,6 +18,7 @@ export function createCrossWindowPersistedStore<TSnapshot>({
 }: CrossWindowPersistedStoreOptions<TSnapshot>) {
   let snapshot = readStoredSnapshot('initial')
   let broadcastChannel: BroadcastChannel | null = null
+  let crossWindowSyncEnsured = false
   const listeners = new Set<Listener>()
   function readStoredSnapshot(reason: CrossWindowStoreReadReason = 'initial'): TSnapshot {
     if (typeof localStorage === 'undefined') return emptySnapshot
@@ -67,6 +68,9 @@ export function createCrossWindowPersistedStore<TSnapshot>({
   }
 
   function ensureCrossWindowSync(): void {
+    if (crossWindowSyncEnsured) return
+    crossWindowSyncEnsured = true
+
     if (typeof window === 'undefined') return
     window.addEventListener('storage', (event) => {
       if (event.key === storageKey) syncFromStorage()
